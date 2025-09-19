@@ -277,8 +277,8 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.hands": {
-      "version": "1.6.1",
-      "depth": 0,
+      "version": "1.6.0",
+      "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.modules.xr": "1.0.0",
