@@ -397,10 +397,13 @@ SkinnedMeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 3
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3c95e12304b3b4d8191cf354f99b1493, type: 2}
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -469,7 +472,6 @@ GameObject:
   - component: {fileID: 2817387344780181308}
   - component: {fileID: 8212720776004003142}
   - component: {fileID: 2347474511718948164}
-  - component: {fileID: 6980437210567601856}
   m_Layer: 0
   m_Name: Hand
   m_TagString: Untagged
@@ -496,7 +498,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &8212720776004003142
 Animator:
-  serializedVersion: 5
+  serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -510,6 +512,7 @@ Animator:
   m_ApplyRootMotion: 0
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
@@ -528,25 +531,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   RightHand: 1
---- !u!114 &6980437210567601856
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3193771699375826310}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 18fc8f4d75b114793909fca874dd70d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  comment: The GameObject this component is attached to must have a <Renderer> component. 
-    Further, the material associated with that <Renderer> must have emissions enabled. 
-    Also, the emission's 'Global Illumination' must be set to 'None'.
-  targetColor: {r: 0.049928807, g: 0.9622642, b: 0.08906894, a: 0}
-  ParticleSystemPrefab: {fileID: 7561057461812771117, guid: ddf0ec3d873fb4cc1bafb19409dbfc05, type: 3}
-  magicSound: {fileID: 8300000, guid: 5ef5d9f7cd370427b9a9160032643e43, type: 3}
-  particlesPosition: {fileID: 0}
 --- !u!1 &3589912454863050540
 GameObject:
   m_ObjectHideFlags: 0
