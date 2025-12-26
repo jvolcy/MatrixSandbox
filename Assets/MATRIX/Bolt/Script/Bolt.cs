@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -18,12 +19,16 @@ public class Bolt : MonoBehaviour
     Transform CandidateNut = null;
     [SerializeField] float shaftLength = 0.1f;
     [SerializeField] float pitchMetersPerRev = 0.01f;
-    float thread = 0f;      //the position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
+    [SerializeField] [Range(0f, 1f)] float thread = 0f;      //the position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
     Rigidbody rb;
     XRGrabInteractable grabInteractable;
-    //Collider boltCollider;
+    Collider boltCollider;
     [SerializeField] bool grabbed = false;   //true when the bolt has been grabbed;  false, otherwise.
+    bool isTrigger = false;  //whether or not the bolt's collider should be a trigger when it is not grabbed.  We automatically make it a trigger when grabbed.
+    bool isKinematic = false;
 
+    const float BACKOUT_RATE = 0.05f;   //the value by which we decrement the thread variable when we are auto-backing out the bolt.
+    const float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
 
     /// <summary>
     /// BoltState
@@ -31,15 +36,19 @@ public class Bolt : MonoBehaviour
     /// CAN_MOUNT - in this state, the bolt is grabbed and in contact with a nut
     /// MOUNTED - the bolt has been parented to a nut, but can still be grabbed (thread = 0.0)
     /// THREADED - the bolt is parented to a nut, but can not longer be grabbed (0.0 < thread <= 1.0)
+    /// BACKOUT - the bolt has been untreaded to the point where thread <= 0.0.  Here, we 
+    /// automatically continue backing it out until it is no longer in contact with the nut.
     /// UNMOUNT - thread value is zero: this is a transition state to get back to the UNTHREADED state.
     /// </summary>
-    enum BoltState { UNTHREADED, CAN_MOUNT, MOUNTED, THREADED, UNMOUNT };
+    enum BoltState { UNTHREADED, CAN_MOUNT, MOUNTED, THREADED, BACKOUT, UNMOUNT };
     [SerializeField] BoltState boltState = BoltState.UNMOUNT;
 
 
     void OnEnable()
     {
         grabInteractable = GetComponent<XRGrabInteractable>();
+        ParentNut = null;
+        CandidateNut = null;
 
         if (grabInteractable != null)
         {
@@ -63,29 +72,38 @@ public class Bolt : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        //boltCollider = GetComponent<Collider>();
+        boltCollider = GetComponent<Collider>();
     }
 
     // Update is called once per frame
-    void Update()
+
+    private void Update()
+    {
+        if (ParentNut != null)
+        { 
+            //follow the parent
+            transform.position = ParentNut.position + shaftLength * thread * ParentNut.forward;
+            transform.rotation = ParentNut.rotation;
+        }
+    }
+
+    void FixedUpdate()
     {
         switch (boltState)
         {
             case BoltState.UNMOUNT:
+                Debug.Log("Start UNMOUNT");
                 /// This is a transition state to get us back to the default
                 /// UNTHREADED state from any other state.  In the UNTHREADED
                 /// state, the rigidbody is non-kinematic, the collider is not
                 /// a trigger and the bolt is grabbable.
-                //boltCollider.isTrigger = false;
+                isTrigger = false;
+                isKinematic = false;
                 boltState = BoltState.UNTHREADED;
                 ParentNut = null;
-                CandidateNut = null;
-                transform.parent = null;
-                //rb.isKinematic = false;
-                //rb.isKinematic = true;     //TEMP
                 grabInteractable.enabled = true;
-                Debug.Log("Unparent.");
                 thread = 0f;
+                Debug.Log("End UNMOUNT");
                 break;
 
             case BoltState.UNTHREADED:
@@ -96,29 +114,23 @@ public class Bolt : MonoBehaviour
                 if (!CandidateNut)
                 {
                     //if we are no longer in range of the nut, return to the UNTHREADED state.
-                    boltState = BoltState.UNTHREADED;
+                    boltState = BoltState.UNMOUNT;
                 }
                 else if (!grabbed)
                 {
                     //here, we are in range of a nut and the have released the bolt --> need to mount it to the nut if we are aligned
 
-                    if (aligned(transform, CandidateNut, 10f))
+                    if (aligned(transform, CandidateNut, MAX_ALIGN_ANGLE))
                     {
-                        //boltCollider.isTrigger = true;  //allow the bolt to pass through the nut and other objects
+                        //Once ParentNut is set to a non-null value, the bolt will follow the nut in Update().
                         ParentNut = CandidateNut;
-                        transform.parent = ParentNut;
-                        //rb.isKinematic = false;  //TEMP
-                        //rb.isKinematic = true;  //turn off gravity and collision forces
-                        grabInteractable.enabled = true;    //we can still grab and remove remove the bolt from the MOUNTED state
-                        Debug.Log("Parented.");
-                        transform.localPosition = Vector3.zero;
-                        transform.localRotation = Quaternion.identity;
-                        thread = 0f;
+                        isKinematic = true;
                         boltState = BoltState.MOUNTED;
                     }
                     else
                     {
-                        boltState = BoltState.UNTHREADED;
+                        //isTrigger = false;
+                        boltState = BoltState.UNMOUNT;
                     }
                 }
                 else    //bolt is still grabbed
@@ -128,18 +140,52 @@ public class Bolt : MonoBehaviour
                 break;
 
             case BoltState.MOUNTED:
+                //Note: The bolt follows the parent nut in Update()
                 if (grabbed)
                 {
-                    Debug.Log("BoltState.MOUNTED -> UNMOUNT");
                     boltState = BoltState.UNMOUNT;
                 }
-                // if we come into contact with the driver, we move to the THREADED state.
+                else
+                {
+                    if (thread > 0f)
+                    {
+                        //bolt no longer grabbable
+                        //transition to THREADED state
+                        grabInteractable.enabled = false;
+                        isTrigger = true;  //allow the bolt to pass through the nut and other objects
+                        boltState = BoltState.THREADED;
+                    }
+                }
+                    // if we come into contact with the driver, we move to the THREADED state.
                 break;
 
             case BoltState.THREADED:
+                //Note: The bolt follows the parent nut in Update()
+                if (thread <= 0f)
+                {
+                    boltState = BoltState.BACKOUT;
+                    Debug.Log("[1] thread = " + thread);
+                }
                 break;
+
+            case BoltState.BACKOUT:
+                //Note: The bolt follows the parent in Update()
+                if (CandidateNut != null)
+                {
+                    thread -= BACKOUT_RATE;
+                }
+                else
+                {
+                    Debug.Log("[2] thread = " + thread);
+                    boltState = BoltState.UNMOUNT;
+                }
+                    break;
         }
-        
+
+        //When the bolt is grabbed, its collider is a trigger.
+        //When it is released, its collider state is set by isTrigger.
+        boltCollider.isTrigger = grabbed | isTrigger;
+        rb.isKinematic = grabbed | isKinematic;
     }
 
     /// <summary>
@@ -182,11 +228,13 @@ public class Bolt : MonoBehaviour
     private void OnObjectGrabbed(SelectEnterEventArgs args)
     {
         grabbed = true;
+        //boltCollider.isTrigger = true;  //when we grab the bolt, it becomes a trigger
     }
 
     private void OnObjectReleased(SelectExitEventArgs args)
     {
         grabbed = false;
+        //boltCollider.isTrigger = isTrigger; //when we release the bolt, it reverts to the state specified by isTrigger.
     }
 
 }
