@@ -1371,10 +1371,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: bolt (2)
       objectReference: {fileID: 0}
-    - target: {fileID: 6641837965027860391, guid: d10203987141c534ea7ec01686dcc013, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1826,10 +1822,6 @@ PrefabInstance:
     - target: {fileID: 6641837965027860391, guid: d10203987141c534ea7ec01686dcc013, type: 3}
       propertyPath: m_Name
       value: bolt (1)
-      objectReference: {fileID: 0}
-    - target: {fileID: 6641837965027860391, guid: d10203987141c534ea7ec01686dcc013, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
