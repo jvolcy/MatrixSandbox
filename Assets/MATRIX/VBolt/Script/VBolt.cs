@@ -21,6 +21,7 @@ public class VBolt : MonoBehaviour
     public float shaftLength = 0.1f;  //the length of the bolt shaft.
     public float pitchMetersPerRev = 0.01f;   //The distance traveled by the bolt with one revolution by a driver.
     [Range(0f, 1f)] public float thread = 0f;      //the position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
+    float zAngle = 0f;   //the current angle of the bolt around its forward axis.
 
     //Component References
     Rigidbody rb;
@@ -42,7 +43,7 @@ public class VBolt : MonoBehaviour
     bool isTrigger = false;  //whether or not the bolt's Collider should be a trigger when it is released from a grab.  It is a trigger when grabbed.
     bool isKinematic = false;  //whether or not the bolts RigidBody should be kinematic when it is released from a grab.  It is kinematic when grabbed.
 
-    float revPerSec = 0f;   //the speed at which we are turning the bolt
+    public float revPerSec = 0f;   //the speed at which we are turning the bolt
     public float BACKOUT_RATE = 0.05f;   //the value by which we decrement the thread variable when we are auto-backing out the bolt.
     public float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
 
@@ -98,11 +99,16 @@ public class VBolt : MonoBehaviour
         {
             //if (thread != pos)
             //follow the parent
+            if ((thread < 1f) || (revPerSec < 0))
+            {
+                float deltaRev = revPerSec * Time.deltaTime;
+                zAngle += deltaRev * 360f;
+                thread += pitchMetersPerRev * deltaRev / shaftLength;
+                thread = Mathf.Clamp(thread, -1f, 1f);
+            }
+
             transform.position = ParentNut.position + shaftLength * thread * ParentNut.forward;
-            transform.eulerAngles = ParentNut.eulerAngles + revPerSec * 360f * Time.deltaTime * Vector3.forward;
-            //transform.eulerAngles = new Vector3(ParentNut.eulerAngles.x, ParentNut.eulerAngles.y, 1);
-            //transform.rotation = ParentNut.rotation;
-            //transform.Rotate(0, 0, 1); 
+            transform.eulerAngles = ParentNut.eulerAngles - zAngle * Vector3.forward;
         }
     }
 
@@ -121,6 +127,8 @@ public class VBolt : MonoBehaviour
                 ParentNut = null;
                 grabInteractable.enabled = true;
                 thread = 0f;
+                zAngle = 0f;
+                revPerSec = 0f;
                 break;
 
             case BoltState.UNTHREADED:
