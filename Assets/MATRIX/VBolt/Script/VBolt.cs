@@ -1,7 +1,5 @@
 using System;
-using Unity.Collections;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
@@ -9,17 +7,20 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 [RequireComponent(typeof(XRGrabInteractable))]
 [RequireComponent(typeof(Collider))]
 
-public class Bolt : MonoBehaviour
+public class VBolt : MonoBehaviour
 {
     /// <summary>
-    /// Requires nuts tagged as "Nut".
+    /// Requires nuts tagged as "VNut".
+    /// A VNut is any GameObject with a collider or trigger tagged as "VNut".
+    /// The GameObject's forward axis must be aligned with the bolt's forward
+    /// axis within MAX_ALIGN_ANGLE in order to mount the bolt onto the nut.
     /// </summary>
 
     Transform ParentNut = null;     //the nut we are bound to
     Transform CandidateNut = null;  //the net we are able to bind to.  This may eventually become the ParentNut.
-    [SerializeField] float shaftLength = 0.1f;  //the length of the bolt shaft.
-    [SerializeField] float pitchMetersPerRev = 0.01f;   //The distance traveled by the bolt with one revolution by a driver.
-    [SerializeField] [Range(0f, 1f)] float thread = 0f;      //the position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
+    public float shaftLength = 0.1f;  //the length of the bolt shaft.
+    public float pitchMetersPerRev = 0.01f;   //The distance traveled by the bolt with one revolution by a driver.
+    [Range(0f, 1f)] public float thread = 0f;      //the position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
 
     //Component References
     Rigidbody rb;
@@ -41,8 +42,9 @@ public class Bolt : MonoBehaviour
     bool isTrigger = false;  //whether or not the bolt's Collider should be a trigger when it is released from a grab.  It is a trigger when grabbed.
     bool isKinematic = false;  //whether or not the bolts RigidBody should be kinematic when it is released from a grab.  It is kinematic when grabbed.
 
-    const float BACKOUT_RATE = 0.05f;   //the value by which we decrement the thread variable when we are auto-backing out the bolt.
-    const float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
+    float revPerSec = 0f;   //the speed at which we are turning the bolt
+    public float BACKOUT_RATE = 0.05f;   //the value by which we decrement the thread variable when we are auto-backing out the bolt.
+    public float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
 
     /// <summary>
     /// BoltState
@@ -90,14 +92,17 @@ public class Bolt : MonoBehaviour
     }
 
     // Update is called once per frame
-
     private void Update()
     {
         if (ParentNut != null)
-        { 
+        {
+            //if (thread != pos)
             //follow the parent
             transform.position = ParentNut.position + shaftLength * thread * ParentNut.forward;
-            transform.rotation = ParentNut.rotation;
+            transform.eulerAngles = ParentNut.eulerAngles + revPerSec * 360f * Time.deltaTime * Vector3.forward;
+            //transform.eulerAngles = new Vector3(ParentNut.eulerAngles.x, ParentNut.eulerAngles.y, 1);
+            //transform.rotation = ParentNut.rotation;
+            //transform.Rotate(0, 0, 1); 
         }
     }
 
@@ -220,6 +225,13 @@ public class Bolt : MonoBehaviour
         rb.isKinematic = grabbed | isKinematic;
     }
 
+    public void MoveToThreadPosition(float pos, float RevPerSec = 1f, bool jump = false)
+    {
+        revPerSec = RevPerSec;
+    }
+
+
+
     /// <summary>
     /// returns true if the angle between the forward vectors of the
     /// provided transforms is less than maxAngleDeg.  Returns false
@@ -238,23 +250,23 @@ public class Bolt : MonoBehaviour
     }
 
     /// <summary>
-    /// When we come into contact with a "Nut" object, we have a candidate
+    /// When we come into contact with a "VNut" object, we have a candidate
     /// parent nut.
     /// </summary>
     /// <param name="other"></param>
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Nut")) { CandidateNut = other.transform; }
+        if (other.CompareTag("VNut")) { CandidateNut = other.transform; }
     }
 
     /// <summary>
-    /// When we lose contact with a "Nut" object, we have no candidate
+    /// When we lose contact with a "VNut" object, we have no candidate
     /// parent nut.
     /// </summary>
     /// <param name="other"></param>
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Nut")) { CandidateNut = null; }
+        if (other.CompareTag("VNut")) { CandidateNut = null; }
     }
 
     private void OnObjectGrabbed(SelectEnterEventArgs args)

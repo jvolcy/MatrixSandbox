@@ -12,8 +12,8 @@ GameObject:
   - component: {fileID: 1368175279710824994}
   - component: {fileID: 3002248019908944775}
   m_Layer: 0
-  m_Name: Nut
-  m_TagString: Nut
+  m_Name: VNut
+  m_TagString: VNut
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
