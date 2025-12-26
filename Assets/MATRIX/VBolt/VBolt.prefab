@@ -131,9 +131,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shaftLength: 0.054
   pitchMetersPerRev: 0.01
-  thread: 0
-  grabbed: 0
-  boltState: 5
+  revPerSec: 1
+  TargetPosition: 0
+  BACKOUT_RATE: 0.05
+  MAX_ALIGN_ANGLE: 10
 --- !u!114 &7999262209960026687
 MonoBehaviour:
   m_ObjectHideFlags: 0

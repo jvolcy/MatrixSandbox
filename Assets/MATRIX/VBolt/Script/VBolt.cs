@@ -6,7 +6,8 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(XRGrabInteractable))]
 [RequireComponent(typeof(Collider))]
-
+///JVolcy; Spelman College; Dec. 2025
+///VBolt.cs
 public class VBolt : MonoBehaviour
 {
     /// <summary>
@@ -14,13 +15,58 @@ public class VBolt : MonoBehaviour
     /// A VNut is any GameObject with a collider or trigger tagged as "VNut".
     /// The GameObject's forward axis must be aligned with the bolt's forward
     /// axis within MAX_ALIGN_ANGLE in order to mount the bolt onto the nut.
+    /// 
+    /// How to use:
+    /// The shaftLength and pitchMetersPerRev values are set to match the
+    /// default bolt geometry provided.  You can leave these untouched
+    /// unless you want to use a different bolt/screw.
+    /// 
+    /// shaftLength is the lenght of the bolt's shank in meters.  This is
+    /// the length measured from the tip of the bolt up to, but excluding,
+    /// the head.  If you are using a different bolt model, the root of the
+    /// local coordinate must be at the tip of the bolt, with the forward
+    /// direction pointing away from the shaft.
+    /// 
+    /// pitchMetersPerRev specifis how far the bolt advances with each
+    /// revolution.  The units are meters per revolution.
+    /// 
+    /// revPerSec specifies how fast the bolt turns.  This is a positive
+    /// value.
+    /// 
+    /// TargetPosition is the normalized target position of the bolt relative
+    /// to the nut (aka, the target position of the nut on the bolt).  A value
+    /// of one means that the bolt is fully threaded to the nut.  A value of
+    /// zero means we want to unmount the bolt from the nut.  Normally, when 
+    /// the bolt is first mounted to the nut, the TargetPosition is zero (if
+    /// ResetTargetOnMount is true).  This is the only time, a zero value
+    /// of the TargetPosition will not cause the bolt to unmount.  Set the
+    /// TargetPosition to a value from 0 to 1 and the bolt will travel at
+    /// the rate of revPerSec until it reaches the target value.  Set the
+    /// target value to 0 to unmount the bolt.
+    /// 
+    /// ResetTargetOnMount is a boolean that specifies whether we should
+    /// reset the target position to zero when a bolt is first mounted
+    /// to a nut.  If this value is set to false, a mounted bolt may immediately
+    /// begin to move towards whatever position is specified by TargetPosition. 
     /// </summary>
 
     Transform ParentNut = null;     //the nut we are bound to
     Transform CandidateNut = null;  //the net we are able to bind to.  This may eventually become the ParentNut.
-    public float shaftLength = 0.1f;  //the length of the bolt shaft.
+    public float shaftLength = 0.054f;  //the length of the bolt shaft.
     public float pitchMetersPerRev = 0.01f;   //The distance traveled by the bolt with one revolution by a driver.
-    [Range(0f, 1f)] public float thread = 0f;      //the position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
+    public float revPerSec = 1f;   //the speed at which we should turn the bolt
+    [Range(0f, 1f)] public float TargetPosition = 0f;   //The normalized target position of the nut on the bolt.
+    float threadPosition = 0f;      //the normalized position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
+    /// Note on threadPosition:  An inital threadPosition of
+    /// 0 means that the bolt is mounted to the nut, but it hasn't yet
+    /// engaged the threads.  In such a state, the bolt remains grabbable,
+    /// allowing the user to remove it from the nut.  Any value above 0
+    /// means that the bolt has been threaded to the nut.  Any threading,
+    /// no matter how small, means that the bolt is no longer grabbable.  It
+    /// needs to be untreaded before it can be grabbed.  A value of 1 means
+    /// that the bolt is fully threaded into the nut.  threadPosition attempts
+    /// to move the bolt the normalized position specified by TargetPosition.
+    public bool ResetTargetOnMount = true;  //whether we should reset the TargetPosition to zero when the bolt is first mounted to a nut.
     float zAngle = 0f;   //the current angle of the bolt around its forward axis.
 
     //Component References
@@ -43,7 +89,6 @@ public class VBolt : MonoBehaviour
     bool isTrigger = false;  //whether or not the bolt's Collider should be a trigger when it is released from a grab.  It is a trigger when grabbed.
     bool isKinematic = false;  //whether or not the bolts RigidBody should be kinematic when it is released from a grab.  It is kinematic when grabbed.
 
-    public float revPerSec = 0f;   //the speed at which we are turning the bolt
     public float BACKOUT_RATE = 0.05f;   //the value by which we decrement the thread variable when we are auto-backing out the bolt.
     public float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
 
@@ -97,17 +142,24 @@ public class VBolt : MonoBehaviour
     {
         if (ParentNut != null)
         {
-            //if (thread != pos)
-            //follow the parent
-            if ((thread < 1f) || (revPerSec < 0))
+            TargetPosition = Mathf.Clamp(TargetPosition, -1f, 1f);
+
+            if (TargetPosition > threadPosition)
             {
                 float deltaRev = revPerSec * Time.deltaTime;
                 zAngle += deltaRev * 360f;
-                thread += pitchMetersPerRev * deltaRev / shaftLength;
-                thread = Mathf.Clamp(thread, -1f, 1f);
+                threadPosition += pitchMetersPerRev * deltaRev / shaftLength;
+                threadPosition = Mathf.Clamp(threadPosition, -1f, TargetPosition);
+            }
+            else if (TargetPosition < threadPosition)
+            {
+                float deltaRev = -revPerSec * Time.deltaTime;
+                zAngle += deltaRev * 360f;
+                threadPosition += pitchMetersPerRev * deltaRev / shaftLength;
+                threadPosition = Mathf.Clamp(threadPosition, TargetPosition, 1f);
             }
 
-            transform.position = ParentNut.position + shaftLength * thread * ParentNut.forward;
+            transform.position = ParentNut.position + shaftLength * threadPosition * ParentNut.forward;
             transform.eulerAngles = ParentNut.eulerAngles - zAngle * Vector3.forward;
         }
     }
@@ -126,9 +178,9 @@ public class VBolt : MonoBehaviour
                 boltState = BoltState.UNTHREADED;
                 ParentNut = null;
                 grabInteractable.enabled = true;
-                thread = 0f;
+                threadPosition = 0f;
+                //Note: TargetPosition is set/reset in the CAN_MOUNT state.
                 zAngle = 0f;
-                revPerSec = 0f;
                 break;
 
             case BoltState.UNTHREADED:
@@ -154,6 +206,11 @@ public class VBolt : MonoBehaviour
                         //Once ParentNut is set to a non-null value, the bolt will follow the nut in Update().
                         ParentNut = CandidateNut;
                         isKinematic = true;     //make the bolt kinematic so that it does not move the nut
+
+                        //The user might have set the TargetPosition while we were in the UNTHREADED.
+                        //We set it here instead of in the UNMOUNT state to ensure it is properly set when we mount.
+                        if (ResetTargetOnMount) TargetPosition = 0f;
+
                         boltState = BoltState.MOUNTED;  //move to the MOUNTED state
                     }
                     else
@@ -185,7 +242,7 @@ public class VBolt : MonoBehaviour
                 {
                     //if the bolt starts threading onto the nut (thread > 0), move to the THREADED
                     //state where the bolt will no longer be grabbable.
-                    if (thread > 0f)
+                    if (threadPosition != 0f)
                     {
                         //bolt no longer grabbable
                         //transition to THREADED state
@@ -205,7 +262,7 @@ public class VBolt : MonoBehaviour
                 //contact with the nut (CandidateNut == NULL).  This prevents
                 //large forces from being applied to the bolt when its
                 //collider reverts from beign a trigger to being a non-trigger.
-                if (thread <= 0f)
+                if (threadPosition <= 0f)
                 {
                     boltState = BoltState.BACKOUT;
                 }
@@ -218,7 +275,7 @@ public class VBolt : MonoBehaviour
                 //the nut (CandidateNut == null).
                 if (CandidateNut != null)
                 {
-                    thread -= BACKOUT_RATE;
+                    threadPosition -= BACKOUT_RATE;
                 }
                 else
                 {
@@ -232,12 +289,6 @@ public class VBolt : MonoBehaviour
         boltCollider.isTrigger = grabbed | isTrigger;
         rb.isKinematic = grabbed | isKinematic;
     }
-
-    public void MoveToThreadPosition(float pos, float RevPerSec = 1f, bool jump = false)
-    {
-        revPerSec = RevPerSec;
-    }
-
 
 
     /// <summary>
