@@ -89,6 +89,8 @@ public class VBolt : MonoBehaviour
     bool isTrigger = false;  //whether or not the bolt's Collider should be a trigger when it is released from a grab.  It is a trigger when grabbed.
     bool isKinematic = false;  //whether or not the bolts RigidBody should be kinematic when it is released from a grab.  It is kinematic when grabbed.
 
+    bool bAutoMount = false;    //set to true to force the bolt to mount to a specified nut
+
     public float BACKOUT_RATE = 0.05f;   //the value by which we decrement the thread variable when we are auto-backing out the bolt.
     public float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
 
@@ -101,8 +103,9 @@ public class VBolt : MonoBehaviour
     /// BACKOUT - the bolt has been untreaded to the point where thread <= 0.0.  Here, we 
     /// automatically continue backing it out until it is no longer in contact with the nut.
     /// UNMOUNT - thread value is zero: this is a transition state to get back to the UNTHREADED state.
+    /// AUTO_MOUNT - explicitly mount to a specified bolt.
     /// </summary>
-    enum BoltState { UNTHREADED, CAN_MOUNT, MOUNTED, THREADED, BACKOUT, UNMOUNT };
+    enum BoltState { UNTHREADED, CAN_MOUNT, MOUNTED, THREADED, BACKOUT, UNMOUNT, AUTO_MOUNT };
     BoltState boltState = BoltState.UNMOUNT;
 
 
@@ -187,6 +190,7 @@ public class VBolt : MonoBehaviour
                 //This is the default state.  We sit here until the bolt is grabbed and
                 //brought into contact with a nut.
                 if (CandidateNut && grabbed) { boltState = BoltState.CAN_MOUNT; }
+                if (bAutoMount) { boltState = BoltState.AUTO_MOUNT; }
                 break;
 
             case BoltState.CAN_MOUNT:
@@ -282,6 +286,16 @@ public class VBolt : MonoBehaviour
                     boltState = BoltState.UNMOUNT;
                 }
                 break;
+
+            case BoltState.AUTO_MOUNT:
+                bAutoMount = false; //lower the auto mount flag
+
+                //the parent nut is already set in the Mount() function.
+                //the position is already set in the Mount()( function.
+                isKinematic = true; //make the bolt kinematic
+                threadPosition = TargetPosition;    //jump to the target position
+                boltState = BoltState.MOUNTED;
+                break;
         }
 
         //When the bolt is grabbed, its collider is a trigger and its RigidBody is set to kinematic.
@@ -290,6 +304,22 @@ public class VBolt : MonoBehaviour
         rb.isKinematic = grabbed | isKinematic;
     }
 
+    /// <summary>
+    /// Function to directly mount us to a specified vnut.  A vnut
+    /// is any GameObject with a collider or trigger tagged as "VNut".
+    /// The GameObject's forward axis must be aligned with the bolt's forward
+    /// axis within MAX_ALIGN_ANGLE in order to mount the bolt onto the nut.
+    /// The bolt must be in the default (UNTREADED) state before invoking
+    /// this function.
+    /// </summary>
+    /// <param name="vnut"></param>
+    /// <param name="position"></param>
+    public void Mount(Transform vnut, float position)
+    {
+        ParentNut = vnut;
+        TargetPosition = position;
+        bAutoMount = true;
+    }
 
     /// <summary>
     /// returns true if the angle between the forward vectors of the
