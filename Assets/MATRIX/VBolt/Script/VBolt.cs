@@ -8,48 +8,48 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 [RequireComponent(typeof(Collider))]
 ///JVolcy; Spelman College; Dec. 2025
 ///VBolt.cs
+
+/// <summary>
+/// Requires nuts tagged as "VNut".
+/// A VNut is any GameObject with a collider or trigger tagged as "VNut".
+/// The GameObject's forward axis must be aligned with the bolt's forward
+/// axis within MAX_ALIGN_ANGLE in order to mount the bolt onto the nut.
+/// 
+/// How to use:
+/// The shaftLength and pitchMetersPerRev values are set to match the
+/// default bolt geometry provided.  You can leave these untouched
+/// unless you want to use a different bolt/screw.
+/// 
+/// shaftLength is the lenght of the bolt's shank in meters.  This is
+/// the length measured from the tip of the bolt up to, but excluding,
+/// the head.  If you are using a different bolt model, the root of the
+/// local coordinate must be at the tip of the bolt, with the forward
+/// direction pointing away from the shaft.
+/// 
+/// pitchMetersPerRev specifis how far the bolt advances with each
+/// revolution.  The units are meters per revolution.
+/// 
+/// revPerSec specifies how fast the bolt turns.  This is a positive
+/// value.
+/// 
+/// TargetPosition is the normalized target position of the bolt relative
+/// to the nut (aka, the target position of the nut on the bolt).  A value
+/// of one means that the bolt is fully threaded to the nut.  A value of
+/// zero means we want to unmount the bolt from the nut.  Normally, when 
+/// the bolt is first mounted to the nut, the TargetPosition is zero (if
+/// ResetTargetOnMount is true).  This is the only time, a zero value
+/// of the TargetPosition will not cause the bolt to unmount.  Set the
+/// TargetPosition to a value from 0 to 1 and the bolt will travel at
+/// the rate of revPerSec until it reaches the target value.  Set the
+/// target value to 0 to unmount the bolt.
+/// 
+/// ResetTargetOnMount is a boolean that specifies whether we should
+/// reset the target position to zero when a bolt is first mounted
+/// to a nut.  If this value is set to false, a mounted bolt may immediately
+/// begin to move towards whatever position is specified by TargetPosition. 
+/// </summary>
 public class VBolt : MonoBehaviour
 {
-    /// <summary>
-    /// Requires nuts tagged as "VNut".
-    /// A VNut is any GameObject with a collider or trigger tagged as "VNut".
-    /// The GameObject's forward axis must be aligned with the bolt's forward
-    /// axis within MAX_ALIGN_ANGLE in order to mount the bolt onto the nut.
-    /// 
-    /// How to use:
-    /// The shaftLength and pitchMetersPerRev values are set to match the
-    /// default bolt geometry provided.  You can leave these untouched
-    /// unless you want to use a different bolt/screw.
-    /// 
-    /// shaftLength is the lenght of the bolt's shank in meters.  This is
-    /// the length measured from the tip of the bolt up to, but excluding,
-    /// the head.  If you are using a different bolt model, the root of the
-    /// local coordinate must be at the tip of the bolt, with the forward
-    /// direction pointing away from the shaft.
-    /// 
-    /// pitchMetersPerRev specifis how far the bolt advances with each
-    /// revolution.  The units are meters per revolution.
-    /// 
-    /// revPerSec specifies how fast the bolt turns.  This is a positive
-    /// value.
-    /// 
-    /// TargetPosition is the normalized target position of the bolt relative
-    /// to the nut (aka, the target position of the nut on the bolt).  A value
-    /// of one means that the bolt is fully threaded to the nut.  A value of
-    /// zero means we want to unmount the bolt from the nut.  Normally, when 
-    /// the bolt is first mounted to the nut, the TargetPosition is zero (if
-    /// ResetTargetOnMount is true).  This is the only time, a zero value
-    /// of the TargetPosition will not cause the bolt to unmount.  Set the
-    /// TargetPosition to a value from 0 to 1 and the bolt will travel at
-    /// the rate of revPerSec until it reaches the target value.  Set the
-    /// target value to 0 to unmount the bolt.
-    /// 
-    /// ResetTargetOnMount is a boolean that specifies whether we should
-    /// reset the target position to zero when a bolt is first mounted
-    /// to a nut.  If this value is set to false, a mounted bolt may immediately
-    /// begin to move towards whatever position is specified by TargetPosition. 
-    /// </summary>
-
     Transform ParentNut = null;     //the nut we are bound to
     Transform CandidateNut = null;  //the net we are able to bind to.  This may eventually become the ParentNut.
     public float shaftLength = 0.054f;  //the length of the bolt shaft.
