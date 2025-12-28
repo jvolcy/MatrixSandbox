@@ -42,7 +42,7 @@ GameObject:
   - component: {fileID: 6298104707814524189}
   - component: {fileID: 5487692849884050174}
   - component: {fileID: -4260892214513242719}
-  - component: {fileID: 619417005029282553}
+  - component: {fileID: -6040507063987233157}
   - component: {fileID: 7999262209960026687}
   m_Layer: 0
   m_Name: VBolt
@@ -117,7 +117,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0230346, y: 0.02610069, z: 0.060911253}
   m_Center: {x: -0.00041237287, y: 0, z: -0.040512525}
---- !u!114 &619417005029282553
+--- !u!114 &-6040507063987233157
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -126,13 +126,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6641837965027860391}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5005fe5544a95da439b52e72e0ece963, type: 3}
+  m_Script: {fileID: 11500000, guid: 36518bedb0bd8cd4189a004fa8652771, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   shaftLength: 0.054
   pitchMetersPerRev: 0.01
   revPerSec: 1
   TargetPosition: 0
+  ResetTargetOnMount: 1
   BACKOUT_RATE: 0.05
   MAX_ALIGN_ANGLE: 10
 --- !u!114 &7999262209960026687

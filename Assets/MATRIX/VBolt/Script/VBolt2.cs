@@ -7,15 +7,16 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 [RequireComponent(typeof(XRGrabInteractable))]
 [RequireComponent(typeof(Collider))]
 ///JVolcy; Spelman College; Dec. 2025
-///VBolt.cs
-///This version of the script manually positions the bolt relative to the
-///nut with each update.  This may be computationally more expensive than
-///simply parenting the bolt to a nut.  However, this approach avoids the
-///problem of a scaled nut inadvertantly distorting its child bolt.
+///VBolt2.cs
+///This version of the script uses Nut/Bolt object parenting to associate
+///the bolt with a nut.  This has the limitation that a scaled nut will
+///scale and potentially distort the bolt, even after it is unmounted.
 
 /// <summary>
 /// Requires nuts tagged as "VNut".
-/// A VNut is any GameObject with a collider or trigger tagged as "VNut".
+/// A VNut is any GameObject with a collider or trigger tagged as "VNut"
+/// and a scale of 1,1,1.  Note that any and all parent objects of a 
+/// VNut must also have a 1,1,1 scale.
 /// The GameObject's forward axis must be aligned with the bolt's forward
 /// axis within MAX_ALIGN_ANGLE in order to mount the bolt onto the nut.
 /// 
@@ -52,7 +53,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 /// to a nut.  If this value is set to false, a mounted bolt may immediately
 /// begin to move towards whatever position is specified by TargetPosition. 
 /// </summary>
-public class VBolt : MonoBehaviour
+public class VBolt2 : MonoBehaviour
 {
     Transform ParentNut = null;     //the nut we are bound to
     Transform CandidateNut = null;  //the net we are able to bind to.  This may eventually become the ParentNut.
@@ -71,7 +72,6 @@ public class VBolt : MonoBehaviour
     /// that the bolt is fully threaded into the nut.  threadPosition attempts
     /// to move the bolt the normalized position specified by TargetPosition.
     public bool ResetTargetOnMount = true;  //whether we should reset the TargetPosition to zero when the bolt is first mounted to a nut.
-    float zAngle = 0f;   //the current angle of the bolt around its forward axis.
 
     //Component References
     Rigidbody rb;
@@ -154,20 +154,19 @@ public class VBolt : MonoBehaviour
             if (TargetPosition > threadPosition)
             {
                 float deltaRev = revPerSec * Time.deltaTime;
-                zAngle += deltaRev * 360f;
                 threadPosition += pitchMetersPerRev * deltaRev / shaftLength;
                 threadPosition = Mathf.Clamp(threadPosition, -1f, TargetPosition);
+                transform.Rotate(0, 0, -deltaRev * 360f, Space.Self);
             }
             else if (TargetPosition < threadPosition)
             {
-                float deltaRev = -revPerSec * Time.deltaTime;
-                zAngle += deltaRev * 360f;
-                threadPosition += pitchMetersPerRev * deltaRev / shaftLength;
+                float deltaRev = revPerSec * Time.deltaTime;
+                threadPosition -= pitchMetersPerRev * deltaRev / shaftLength;
                 threadPosition = Mathf.Clamp(threadPosition, TargetPosition, 1f);
+                transform.Rotate(0, 0, deltaRev * 360f, Space.Self);
             }
 
-            transform.position = ParentNut.position + shaftLength * threadPosition * ParentNut.forward;
-            transform.eulerAngles = ParentNut.eulerAngles - zAngle * Vector3.forward;
+            transform.localPosition = shaftLength * threadPosition * Vector3.forward;
         }
     }
 
@@ -186,8 +185,9 @@ public class VBolt : MonoBehaviour
                 ParentNut = null;
                 grabInteractable.enabled = true;
                 threadPosition = 0f;
+                transform.SetParent(null, true);
                 //Note: TargetPosition is set/reset in the CAN_MOUNT state.
-                zAngle = 0f;
+
                 break;
 
             case BoltState.UNTHREADED:
@@ -219,6 +219,9 @@ public class VBolt : MonoBehaviour
                         //We set it here instead of in the UNMOUNT state to ensure it is properly set when we mount.
                         if (ResetTargetOnMount) TargetPosition = 0f;
 
+                        transform.SetParent(ParentNut, true);
+                        transform.localPosition = Vector3.zero;
+                        transform.localRotation = Quaternion.identity;
                         boltState = BoltState.MOUNTED;  //move to the MOUNTED state
                     }
                     else
@@ -295,9 +298,12 @@ public class VBolt : MonoBehaviour
                 bAutoMount = false; //lower the auto mount flag
 
                 //the parent nut is already set in the Mount() function.
-                //the position is already set in the Mount()( function.
+                //the target position is already set in the Mount() function.
                 isKinematic = true; //make the bolt kinematic
                 threadPosition = TargetPosition;    //jump to the target position
+                transform.SetParent(ParentNut, true);
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity; 
                 boltState = BoltState.MOUNTED;
                 break;
         }
