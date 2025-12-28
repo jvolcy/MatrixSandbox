@@ -56,9 +56,13 @@ public class VBolt : MonoBehaviour
 {
     Transform ParentNut = null;     //the nut we are bound to
     Transform CandidateNut = null;  //the net we are able to bind to.  This may eventually become the ParentNut.
+    [Tooltip("The length of the bolt shaft in meters, excluding the head.")]
     public float shaftLength = 0.054f;  //the length of the bolt shaft.
+    [Tooltip("The pitch of the bolt in meters of advance per revolution.")]
     public float pitchMetersPerRev = 0.01f;   //The distance traveled by the bolt with one revolution by a driver.
+    [Tooltip("The speed (revs/sec) at which the bolt is spin at it travels to a target position.")]
     public float revPerSec = 1f;   //the speed at which we should turn the bolt
+    [Tooltip("The normalized target position of the nut relative to the bolt.  0 = tip of bolt; 1 = fully threaded.")]
     [Range(0f, 1f)] public float TargetPosition = 0f;   //The normalized target position of the nut on the bolt.
     float threadPosition = 0f;      //the normalized position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.
     /// Note on threadPosition:  An inital threadPosition of
@@ -70,6 +74,7 @@ public class VBolt : MonoBehaviour
     /// needs to be untreaded before it can be grabbed.  A value of 1 means
     /// that the bolt is fully threaded into the nut.  threadPosition attempts
     /// to move the bolt the normalized position specified by TargetPosition.
+    [Tooltip("Whether we should reset the TargetPosition value to 0 when the bolt is first mounted to a nut.  If ResetTarget On Mount is false and the TargetPosition is 0.5, for example, then the nut will mount half way up the shaft of the bolt.")]
     public bool ResetTargetOnMount = true;  //whether we should reset the TargetPosition to zero when the bolt is first mounted to a nut.
     float zAngle = 0f;   //the current angle of the bolt around its forward axis.
 
@@ -93,9 +98,14 @@ public class VBolt : MonoBehaviour
     bool isTrigger = false;  //whether or not the bolt's Collider should be a trigger when it is released from a grab.  It is a trigger when grabbed.
     bool isKinematic = false;  //whether or not the bolts RigidBody should be kinematic when it is released from a grab.  It is kinematic when grabbed.
 
-    bool bAutoMount = false;    //set to true to force the bolt to mount to a specified nut
+    bool bAutoMount = false;    //sync flag set to true to force the bolt to mount to a specified nut
 
+    [Tooltip("Readonly property that is true when the bolt is mounted onto a VNut object.")]
+    public bool isMounted = false; //boolean that is set to true if the bolt is mounted to a VNut (MOUNTED or THREADED state).  False otherwise.
+
+    [Tooltip("The rate (normalized bolt length /sec at which we unthread the bolt to detach it from the nut.")]
     public float BACKOUT_RATE = 0.05f;   //the value by which we decrement the thread variable when we are auto-backing out the bolt.
+    [Tooltip("The maximum allowed agle between the bolt and nut axes for mounting.")]
     public float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
 
     /// <summary>
@@ -188,6 +198,7 @@ public class VBolt : MonoBehaviour
                 threadPosition = 0f;
                 //Note: TargetPosition is set/reset in the CAN_MOUNT state.
                 zAngle = 0f;
+                isMounted = false;
                 break;
 
             case BoltState.UNTHREADED:
@@ -218,7 +229,7 @@ public class VBolt : MonoBehaviour
                         //The user might have set the TargetPosition while we were in the UNTHREADED.
                         //We set it here instead of in the UNMOUNT state to ensure it is properly set when we mount.
                         if (ResetTargetOnMount) TargetPosition = 0f;
-
+                        isMounted = true;
                         boltState = BoltState.MOUNTED;  //move to the MOUNTED state
                     }
                     else
@@ -298,6 +309,7 @@ public class VBolt : MonoBehaviour
                 //the position is already set in the Mount()( function.
                 isKinematic = true; //make the bolt kinematic
                 threadPosition = TargetPosition;    //jump to the target position
+                isMounted = true;
                 boltState = BoltState.MOUNTED;
                 break;
         }
@@ -337,6 +349,7 @@ public class VBolt : MonoBehaviour
     /// this value, the function returns true.  Otherwise, it
     /// returns false.</param>
     /// <returns></returns>
+
     bool aligned(Transform t1, Transform t2, float maxAngleDeg)
     {
         return Vector3.Dot(t1.forward, t2.forward) > Mathf.Cos(Mathf.Deg2Rad * maxAngleDeg);

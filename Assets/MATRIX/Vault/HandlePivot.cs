@@ -1,3 +1,5 @@
+using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -13,7 +15,12 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 /// </summary>
 public class HandlePivot : MonoBehaviour
 {
+    [SerializeField] Transform[] VNuts;
+    [SerializeField] GameObject VBoltPrefab;
     [SerializeField] XRGrabInteractable grabInteractable;
+
+    List<VBolt> bolts = new();
+    enum DoorState { BOLTED, LATCHED, UNLATCHED }
 
     float StartGrabAngle;   //angle of the interactor when the handle is grabbed
     float GrabAngle; //current angle of the interactor relative to the StartGrabAngle
@@ -49,6 +56,16 @@ public class HandlePivot : MonoBehaviour
         //record the default position of the handle.  We will return
         //to this position whenever the handle is not grabbed.
         StartHandleAngle = transform.rotation.eulerAngles.z;
+
+        //go through the list of VNuts on the door
+        foreach (Transform vnut in VNuts)
+        { 
+            //for each nut, instantiate a bolt
+            var obj = Instantiate(VBoltPrefab, null);
+            var vbolt = obj.GetComponent<VBolt>();
+            vbolt.Mount(vnut, 1);   //mount the bolt, fully-threaded, onto its corresponding nut.
+            bolts.Add(vbolt);   //store the bolt in our list of bolts
+        }
     }
 
 
@@ -76,6 +93,19 @@ public class HandlePivot : MonoBehaviour
             transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, StartHandleAngle);
         }
 
+    }
+
+    /// <summary>
+    /// Function that checks if all the door bolts have been removed.
+    /// </summary>
+    /// <returns>Returns true if at least 1 door bolt is still in place.</returns>
+    bool isBolted()
+    {
+        foreach (VBolt vb in bolts)
+        {
+            if (vb.isMounted) return true;
+        }
+        return false;
     }
 
     private void OnObjectGrabbed(SelectEnterEventArgs args)
