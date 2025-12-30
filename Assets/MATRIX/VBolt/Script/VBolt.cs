@@ -99,6 +99,8 @@ public class VBolt : MonoBehaviour
     bool isKinematic = false;  //whether or not the bolts RigidBody should be kinematic when it is released from a grab.  It is kinematic when grabbed.
 
     bool bAutoMount = false;    //sync flag set to true to force the bolt to mount to a specified nut
+    Transform autoMountVNut;    //the VNut we will mount to when auto-mounting.
+    float autoMountTargetPosition;    //the position of the VNut we will use when auto-mounting
 
     [Tooltip("Readonly property that is true when the bolt is mounted onto a VNut object.")]
     public bool isMounted = false; //boolean that is set to true if the bolt is mounted to a VNut (MOUNTED or THREADED state).  False otherwise.
@@ -304,9 +306,8 @@ public class VBolt : MonoBehaviour
 
             case BoltState.AUTO_MOUNT:
                 bAutoMount = false; //lower the auto mount flag
-
-                //the parent nut is already set in the Mount() function.
-                //the position is already set in the Mount()( function.
+                ParentNut = autoMountVNut;  //set the parent nut
+                TargetPosition = autoMountTargetPosition; //set the target position
                 isKinematic = true; //make the bolt kinematic
                 threadPosition = TargetPosition;    //jump to the target position
                 isMounted = true;
@@ -323,8 +324,8 @@ public class VBolt : MonoBehaviour
     /// <summary>
     /// Function to directly mount us to a specified vnut.  A vnut
     /// is any GameObject with a collider or trigger tagged as "VNut".
-    /// The GameObject's forward axis must be aligned with the bolt's forward
-    /// axis within MAX_ALIGN_ANGLE in order to mount the bolt onto the nut.
+    /// The bolt's forward axis will be aligned with the vnut
+    /// GameObject's forward axis.
     /// The bolt must be in the default (UNTREADED) state before invoking
     /// this function.
     /// </summary>
@@ -332,8 +333,8 @@ public class VBolt : MonoBehaviour
     /// <param name="position"></param>
     public void Mount(Transform vnut, float position)
     {
-        ParentNut = vnut;
-        TargetPosition = position;
+        autoMountVNut = vnut;
+        autoMountTargetPosition = position;
         bAutoMount = true;
     }
 

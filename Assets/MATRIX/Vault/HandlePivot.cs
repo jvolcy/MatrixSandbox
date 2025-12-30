@@ -63,7 +63,7 @@ public class HandlePivot : MonoBehaviour
             //for each nut, instantiate a bolt
             var obj = Instantiate(VBoltPrefab, null);
             var vbolt = obj.GetComponent<VBolt>();
-            vbolt.Mount(vnut, 1);   //mount the bolt, fully-threaded, onto its corresponding nut.
+            vbolt.Mount(vnut, 1f);   //mount the bolt, fully-threaded, onto its corresponding nut.
             bolts.Add(vbolt);   //store the bolt in our list of bolts
         }
     }
