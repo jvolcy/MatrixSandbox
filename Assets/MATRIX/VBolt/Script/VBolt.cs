@@ -110,6 +110,9 @@ public class VBolt : MonoBehaviour
     [Tooltip("The maximum allowed agle between the bolt and nut axes for mounting.")]
     public float MAX_ALIGN_ANGLE = 10f;  //the maximum allowed alignment angle between nut and bolt
 
+    [Tooltip("Set to true to enable verbose console messages.")]
+    public bool debug = false;
+
     /// <summary>
     /// BoltState
     /// UNTHREADED - this is the default state.  The bolt is not engaged with any nut
@@ -194,6 +197,7 @@ public class VBolt : MonoBehaviour
                 /// a trigger and the bolt is grabbable.
                 isTrigger = false;
                 isKinematic = false;
+                Message("UNMOUT->UNTHREADED");
                 boltState = BoltState.UNTHREADED;
                 ParentNut = null;
                 grabInteractable.enabled = true;
@@ -206,8 +210,9 @@ public class VBolt : MonoBehaviour
             case BoltState.UNTHREADED:
                 //This is the default state.  We sit here until the bolt is grabbed and
                 //brought into contact with a nut.
-                if (CandidateNut && grabbed) { boltState = BoltState.CAN_MOUNT; }
-                if (bAutoMount) { boltState = BoltState.AUTO_MOUNT; }
+                if (CandidateNut && grabbed) { boltState = BoltState.CAN_MOUNT; Message("UNTHREADED->CAN_MOUNT"); }
+
+                if (bAutoMount) { boltState = BoltState.AUTO_MOUNT; Message("UNTHREADED->AUTO_MOUNT"); }
                 break;
 
             case BoltState.CAN_MOUNT:
@@ -215,6 +220,7 @@ public class VBolt : MonoBehaviour
                 if (!CandidateNut)
                 {
                     //if we are no longer in range of the nut, return to the UNTHREADED state.
+                    Message("CAN_MOUNT->UNMOUNT");
                     boltState = BoltState.UNMOUNT;
                 }
                 else if (!grabbed)
@@ -232,11 +238,13 @@ public class VBolt : MonoBehaviour
                         //We set it here instead of in the UNMOUNT state to ensure it is properly set when we mount.
                         if (ResetTargetOnMount) TargetPosition = 0f;
                         isMounted = true;
+                        Message("CAN_MOUNT->MOUNTED");
                         boltState = BoltState.MOUNTED;  //move to the MOUNTED state
                     }
                     else
                     {
                         //if we are not aligned, return to the default state
+                        Message("CAN_MOUNT->UNMOUNT");
                         boltState = BoltState.UNMOUNT;
                     }
                 }
@@ -257,6 +265,7 @@ public class VBolt : MonoBehaviour
                 if (grabbed)
                 {
                     //if the user grabs the bolt, unmount it and return to the default state.
+                    Message("MOUNTED->UNMOUNT");
                     boltState = BoltState.UNMOUNT;
                 }
                 else
@@ -269,6 +278,7 @@ public class VBolt : MonoBehaviour
                         //transition to THREADED state
                         grabInteractable.enabled = false;
                         isTrigger = true;  //allow the bolt to pass through the nut and other objects
+                        Message("MOUNTED->THREADED");
                         boltState = BoltState.THREADED;
                     }
                 }
@@ -285,6 +295,7 @@ public class VBolt : MonoBehaviour
                 //collider reverts from beign a trigger to being a non-trigger.
                 if (threadPosition <= 0f)
                 {
+                    Message("THREADED->BACKOUT");
                     boltState = BoltState.BACKOUT;
                 }
                 break;
@@ -300,6 +311,8 @@ public class VBolt : MonoBehaviour
                 }
                 else
                 {
+                    ParentNut = null;
+                    Message("BACKOUT->UNMOUNT");
                     boltState = BoltState.UNMOUNT;
                 }
                 break;
@@ -311,6 +324,7 @@ public class VBolt : MonoBehaviour
                 isKinematic = true; //make the bolt kinematic
                 threadPosition = TargetPosition;    //jump to the target position
                 isMounted = true;
+                Message("AUTO_MOUNT->MOUNTED");
                 boltState = BoltState.MOUNTED;
                 break;
         }
@@ -384,6 +398,14 @@ public class VBolt : MonoBehaviour
     private void OnObjectReleased(SelectExitEventArgs args)
     {
         grabbed = false;
+    }
+
+    void Message(string arg)
+    {
+        if (!debug) return;
+
+        System.Diagnostics.StackTrace stackTrace = new();
+        Debug.Log(name + ":" + stackTrace.GetFrame(1).GetMethod().Name + "(): " + arg);
     }
 
 }

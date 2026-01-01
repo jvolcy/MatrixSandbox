@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem.XR;
@@ -20,7 +19,11 @@ public class HandlePivot : MonoBehaviour
     [SerializeField] XRGrabInteractable grabInteractable;
 
     List<VBolt> bolts = new();
-    enum DoorState { BOLTED, LATCHED, UNLATCHED }
+    public enum HandleState { LATCHED, UNLATCHED }
+
+    [Tooltip("Read-only state variable: either LATCHED or UNLATCHED, depending on the position of the handle.")]
+    public HandleState handleState = HandleState.LATCHED;   //Read-only state variable that lets us know if the door is latched or not
+    [SerializeField] float UnlatchAngle = 60f;  //the amount we have to turn the handle to unlatch the door
 
     float StartGrabAngle;   //angle of the interactor when the handle is grabbed
     float GrabAngle; //current angle of the interactor relative to the StartGrabAngle
@@ -30,6 +33,7 @@ public class HandlePivot : MonoBehaviour
     bool Grabbed = false;   //true when the handle has been grabbed;  false, otherwise.
 
     IXRSelectInteractor interactor; //a reference to the XR Interactor that grabs the handle (either the left or right hand)
+    AudioSource audioSource;    //a reference to our AudioSource
 
     void OnEnable()
     {
@@ -56,6 +60,8 @@ public class HandlePivot : MonoBehaviour
         //record the default position of the handle.  We will return
         //to this position whenever the handle is not grabbed.
         StartHandleAngle = transform.rotation.eulerAngles.z;
+
+        audioSource = GetComponent<AudioSource>();
 
         //go through the list of VNuts on the door
         foreach (Transform vnut in VNuts)
@@ -86,6 +92,23 @@ public class HandlePivot : MonoBehaviour
 
             //set the rotation of the handle.
             transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, clampedAngle);
+
+            switch (handleState)
+            {
+                case HandleState.LATCHED:
+                    if (-clampedAngle > UnlatchAngle)
+                    {
+                        audioSource.Play();
+                        handleState = HandleState.UNLATCHED;
+                    }
+                    break;
+                case HandleState.UNLATCHED:
+                    if (-clampedAngle <= UnlatchAngle)
+                    {
+                        handleState = HandleState.LATCHED;
+                    }
+                    break;
+            }
         }
         else
         {

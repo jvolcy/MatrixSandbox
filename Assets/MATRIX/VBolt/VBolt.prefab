@@ -93,7 +93,7 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 2
   m_Constraints: 0
   m_CollisionDetection: 1
 --- !u!65 &-4260892214513242719
@@ -103,7 +103,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6641837965027860391}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: d5ecac6b83e65b74dbbfa96d400476f8, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -134,8 +134,10 @@ MonoBehaviour:
   revPerSec: 1
   TargetPosition: 0
   ResetTargetOnMount: 1
+  isMounted: 0
   BACKOUT_RATE: 0.05
   MAX_ALIGN_ANGLE: 10
+  debug: 1
 --- !u!114 &7999262209960026687
 MonoBehaviour:
   m_ObjectHideFlags: 0
