@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -35,6 +36,9 @@ public class HandlePivot : MonoBehaviour
     IXRSelectInteractor interactor; //a reference to the XR Interactor that grabs the handle (either the left or right hand)
     AudioSource audioSource;    //a reference to our AudioSource
 
+    [Tooltip("Set to true to enable verbose console messages.")]
+    public bool debug = false;
+
     void OnEnable()
     {
         if (grabInteractable != null)
@@ -55,17 +59,11 @@ public class HandlePivot : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void Awake()
     {
-        //record the default position of the handle.  We will return
-        //to this position whenever the handle is not grabbed.
-        StartHandleAngle = transform.rotation.eulerAngles.z;
-
-        audioSource = GetComponent<AudioSource>();
-
         //go through the list of VNuts on the door
         foreach (Transform vnut in VNuts)
-        { 
+        {
             //for each nut, instantiate a bolt
             var obj = Instantiate(VBoltPrefab, null);
             var vbolt = obj.GetComponent<VBolt>();
@@ -74,9 +72,26 @@ public class HandlePivot : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        //record the default position of the handle.  We will return
+        //to this position whenever the handle is not grabbed.
+        StartHandleAngle = transform.rotation.eulerAngles.z;
+        audioSource = GetComponent<AudioSource>();
+    }
+
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            foreach (var bolt in bolts)
+            {
+                bolt.TargetPosition = 0;
+            }
+        }
+
+
         if (Grabbed)
         {
             //read and calculate the orientation of the interactor relative
@@ -103,7 +118,7 @@ public class HandlePivot : MonoBehaviour
                     }
                     break;
                 case HandleState.UNLATCHED:
-                    if (-clampedAngle <= UnlatchAngle)
+                    if (-clampedAngle <= UnlatchAngle-40)
                     {
                         handleState = HandleState.LATCHED;
                     }
@@ -122,12 +137,15 @@ public class HandlePivot : MonoBehaviour
     /// Function that checks if all the door bolts have been removed.
     /// </summary>
     /// <returns>Returns true if at least 1 door bolt is still in place.</returns>
-    bool isBolted()
+    public bool isBolted()
     {
         foreach (VBolt vb in bolts)
         {
             if (vb.isMounted) return true;
         }
+
+        Message("[1] Unbolted!");
+
         return false;
     }
 
@@ -146,4 +164,13 @@ public class HandlePivot : MonoBehaviour
 
         Grabbed = false;
     }
+
+    void Message(string arg)
+    {
+        if (!debug) return;
+
+        System.Diagnostics.StackTrace stackTrace = new();
+        Debug.Log(name + ":" + stackTrace.GetFrame(1).GetMethod().Name + "(): " + arg);
+    }
+
 }

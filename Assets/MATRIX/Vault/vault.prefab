@@ -762,6 +762,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1c034a68e8da1d4e92aa18b2bb98377, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  HingeJointMinLocked: -1
+  HingeJointMinUnlocked: -180
+  handlePivot: {fileID: 8337564088901762384}
 --- !u!82 &4910177468195644675
 AudioSource:
   m_ObjectHideFlags: 0
