@@ -61,7 +61,7 @@ public class VBolt : MonoBehaviour
     [Tooltip("The pitch of the bolt in meters of advance per revolution.")]
     public float pitchMetersPerRev = 0.01f;   //The distance traveled by the bolt with one revolution by a driver.
     [Tooltip("The speed (revs/sec) at which the bolt is spin at it travels to a target position.")]
-    public float revPerSec = 1f;   //the speed at which we should turn the bolt
+    public float revPerSec = 0f;   //the speed at which we should turn the bolt
     [Tooltip("The normalized target position of the nut relative to the bolt.  0 = tip of bolt; 1 = fully threaded.")]
     [Range(0f, 1f)] public float TargetPosition = 0f;   //The normalized target position of the nut on the bolt.
     float threadPosition = 0f;      //the normalized position 0 to 1 of the nut on the bolt.  1 = full length of the bolt shaft.

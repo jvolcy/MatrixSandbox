@@ -8,6 +8,8 @@ public class Drill : MonoBehaviour
 {
     [SerializeField] Animator buttonAnimator;
     [SerializeField] Animator bitAnimator;
+    public Driver driver;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
 
     float drillSpeed = 0f;
@@ -41,6 +43,7 @@ public class Drill : MonoBehaviour
         }
 
         audioSource.pitch = pitch;
+        driver.AnimationRPS = drillSpeed;
 
         //float drillSpeed = buttonAnimator.GetLayerWeight(1);
         buttonAnimator.SetLayerWeight(1, drillSpeed);
